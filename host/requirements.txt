@@ -1,0 +1,5 @@
+numpy==2.5.1
+opencv-contrib-python==5.0.0.93
+pillow==12.3.0
+pyserial==3.5
+ttkbootstrap==2.0.1
