@@ -1,6 +1,4 @@
-# P.A.D.D.S
-
-![./banner.webp](./banner.webp)
+# MandiBot
 
 P.A.D.D.S is a mechatronic stomatologic system for replicating and observing jaw movement. The project combines Arduino-controlled servos with a Python desktop controller for direct motor positioning, motion presets, biomechanics sequences, and ArUco-based trajectory tracking.
 
