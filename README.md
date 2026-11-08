@@ -41,6 +41,17 @@ directly from `res/`.
 
 <img src="res/back-motors.JPG" alt="Servo motors mounted inside the robot" width="35%">
 
+The mechanism uses **SG90 micro servos** to drive the jaw through lightweight
+flexible linkages made with fishing line and textile/fabric elements. The
+servos and supporting components are mounted on a **3D-printed anatomical model
+based on a real CT scan**, with the parts glued in place to create the assembled
+demonstrator.
+
+An **Arduino Uno** runs the motion firmware, and an **Arduino sensor shield**
+provides a convenient board for connecting the servo signal leads. Each servo
+is assigned a dedicated control channel; the firmware maps the desktop
+controller's percentage commands to that servo's configured movement range.
+
 ### Desktop interface
 
 <img src="res/interface.jpg" alt="Mandibot desktop interface" width="100%">
