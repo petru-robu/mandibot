@@ -1,105 +1,191 @@
-# MandiBot
+# Mandibot
 
-P.A.D.D.S is a mechatronic stomatologic system for replicating and observing jaw movement. The project combines Arduino-controlled servos with a Python desktop controller for direct motor positioning, motion presets, biomechanics sequences, and ArUco-based trajectory tracking.
+<img src="res/logo-readme.png" alt="Mandibot logo" width="650">
 
-## What It Does
+Mandibot is a mechatronic jaw-motion demonstrator for recreating and observing
+mandibular movement. An Arduino Uno drives eight servo channels, while a Python
+desktop app provides hands-on control, movement presets, camera tracking, and
+recording.
 
-- Controls 8 servo motors from an Arduino Uno.
-- Provides a Python UI for live motor sliders and preset jaw positions.
-- Runs automated movement sequences such as mastication and Posselt's envelope.
-- Tracks relative jaw motion with OpenCV ArUco markers and displays the trajectory.
-- Supports recording and scrubbing through captured movement sessions.
+## At a glance
 
-## Tech Stack
+- **Move:** adjust eight servo channels directly or run presets and motion sequences.
+- **Observe:** track the jaw relative to a fixed reference with a webcam and ArUco markers.
+- **Review:** record the camera view and trajectory together, scrub through a session,
+  and export it as an MP4.
 
-- Arduino / PlatformIO firmware in `src/main.cpp`
-- Python controller in `host/controller.py`
-- Serial communication at `115200` baud
-- OpenCV ArUco tracking
-- `ttkbootstrap` GUI
+## Demonstrations
 
-## Setup
+Motion clips, hardware photos, and the desktop interface screenshot are embedded
+directly from `res/`.
 
-Install the Python dependencies:
+### Robot movement
+
+<img src="res/general-gif.gif" alt="General robot movement" width="30%">
+
+### Laterality
+
+![Left laterality movement](res/left-laterality.gif)
+
+### Opening
+
+![Jaw opening movement](res/open.gif)
+
+### Mastication
+
+![Mastication cycle](res/mastication.gif)
+
+### Hardware
+
+<img src="res/robot-front.JPG" alt="Mandibot robot, side view" width="30%">
+
+<img src="res/back-motors.JPG" alt="Servo motors mounted inside the robot" width="30%">
+
+### Desktop interface
+
+![Mandibot desktop interface](res/interface.jpg)
+
+## How it works
+
+The Python app (`host/controller.py`) is the control panel. It sends changed
+motor targets to the Arduino over USB serial at **115200 baud**. The firmware
+(`src/main.cpp`) converts each target percentage into that servo's configured
+open-to-closed angle and writes it to the servo. On startup, all servos move to
+their midpoint (50%).
+
+At the same time, a webcam feed is processed by OpenCV in a background thread.
+The tracker looks for two markers from the **`DICT_4X4_50` ArUco dictionary**:
+
+- **ID 15** is the fixed upper reference.
+- **ID 13** is attached to the mandible.
+
+<img src="res/aruco.jpg" alt="ArUco markers used for jaw tracking" width="30%">
+
+The app measures the lower marker's position relative to the upper marker.
+**Set Center** resets the reference position; smoothing reduces detection
+jitter, and the trajectory panel draws the jaw's movement from that baseline.
+The readout can show pixels or an approximate millimetre scale derived from the
+printed marker size. Set `MARKER_SIZE_MM` to the actual side length of your
+markers; this is an image-based scale estimate, not a full 3D camera
+calibration.
+
+Recording captures the camera and trajectory panels together. Stop recording
+to review and scrub through the frames, return to the live view, or export the
+recording as an MP4.
+
+## Motion controls
+
+The app includes these presets:
+
+- Fully closed
+- Opening in two phases: rotation, then translation
+- Protrusion
+- Left and right laterality
+- Mastication cycle: drop, open while shifting left, close onto the left side,
+  and return to centric closure; repeats three times
+
+Transitions are animated over the selected duration. Sequences start from the
+fully closed position. **Stop** pauses a sequence at its current position and
+**Resume** continues it; choosing another preset cancels the sequence.
+
+Use the sliders or enter a value from 0 to 100 for direct positioning. Tick
+**Link** under multiple channels to move them together while preserving their
+offsets. The keyboard can select and nudge a channel:
+
+| Key | Action |
+|---|---|
+| Left / Right | Select the previous / next channel |
+| Up / Down | Nudge the selected channel by 1 |
+| Shift + Up / Down | Nudge by 10 |
+| Space | Stop or resume a sequence |
+| R | Start or stop recording |
+| Esc | Cancel motion and command every channel to 50% |
+
+The Esc button is a **software command**, not a physical power cutoff or
+safety-rated emergency stop. Use an appropriate hardware safety mechanism for
+your setup.
+
+## Hardware and setup
+
+You will need an Arduino Uno with eight servos connected to the firmware-configured
+pins, a computer, a webcam, and two printed ArUco markers with IDs 15 and 13 from
+`DICT_4X4_50`. The audio feature is optional and requires a DY-SV8F / DY-SV5W
+MP3 module with a track on its SD card.
+
+Install [uv](https://docs.astral.sh/uv/) and PlatformIO, then install the Python
+dependencies and upload the firmware:
 
 ```bash
-pip install -r host/requirements.txt
-```
-
-Install PlatformIO if needed:
-
-```bash
-pip install platformio
-```
-
-Check the hardware settings in `host/controller.py` before running:
-
-```python
-SERIAL_PORT = "/dev/ttyUSB0"
-BAUD_RATE = 115200
-```
-
-The camera index is currently set in `VideoCaptureThread`:
-
-```python
-cap = cv2.VideoCapture(1)
-```
-
-## Usage
-
-Upload the Arduino firmware:
-
-```bash
+make setup
+uv tool install platformio
 make upload
 ```
 
-Start the Python controller:
+Start the desktop controller:
 
 ```bash
 make python
 ```
 
-Or upload and launch in one step:
+Or upload the firmware and start the controller in one command:
 
 ```bash
 make run
 ```
 
-## Control Protocol
+Connect the Arduino before uploading. The app attempts to connect on startup;
+on Linux it auto-detects the first `/dev/ttyUSB*` or `/dev/ttyACM*` port. Use
+the **Reconnect** button after reconnecting the board. If no Arduino is
+available, the interface opens in UI-only test mode and sends no motor data.
 
-The Python UI sends simple serial commands to the Arduino:
+Before use, check the settings near the top of `host/controller.py`:
 
-```text
-motor_index:percentage
+```python
+SERIAL_PORT = None  # auto-detect, or set a port such as "/dev/ttyUSB1"
+CAMERA_INDEX = 1
+MARKER_SIZE_MM = 20.0
+TOP_MARKER_ID = 15
+BOTTOM_MARKER_ID = 13
 ```
 
-Example:
+Change `CAMERA_INDEX` if your webcam uses a different device index. Print both
+markers at the same known size and update `MARKER_SIZE_MM` to match.
 
-```text
-3:75
-```
+## Serial and optional audio
 
-The firmware maps each `0-100%` value to that motor's configured open and closed servo angles.
+Motor commands are newline-terminated `index:percentage` values. For example,
+`3:75` sends channel 3 to 75% of its configured open-to-closed range. The
+firmware clamps values to 0–100%.
 
-## Motor Mapping
+The optional audio button sends `PLAY` and `STOP` over the same USB connection.
+The Arduino forwards those commands to the MP3 module at 9600 baud using
+`SoftwareSerial`: pin 4 (Arduino TX) connects to the module RX; pin 7 is used
+as the SoftwareSerial RX pin.
 
-| Index | Motor |
-| --- | --- |
-| 0 | TEMP STG |
-| 1 | TEMP DRP |
-| 2 | MAS STG |
-| 3 | MAS DRP |
-| 4 | LAT STG |
-| 5 | LAT DRP |
-| 6 | MED STG |
-| 7 | MED DRP |
+For a standalone MP3-module check, `examples/audio-module-test/` contains a
+sketch that plays the first track for five seconds and then stops it. It uses
+the hardware serial port, so use it separately from the desktop controller.
 
-## Notes
+## Project layout
 
-- The Arduino starts all motors in their configured closed positions.
-- If the serial connection fails, the Python UI still opens in test mode.
-- ArUco tracking expects markers `0` and `1` to be visible in the camera feed.
+| Path | Purpose |
+|---|---|
+| `host/controller.py` | Desktop UI, serial control, camera tracking, recording |
+| `host/requirements.txt` | Python dependencies |
+| `src/main.cpp` | Arduino servo and audio firmware |
+| `examples/audio-module-test/` | Standalone MP3-module test sketch |
+| `platformio.ini` | PlatformIO board and library configuration |
+| `Makefile` | Setup, upload, and launch shortcuts |
+| `res/logo-readme.png` | White-on-navy logo banner used at the top of this README |
+| `res/general-gif.gif` | General movement demo |
+| `res/left-laterality.gif` | Left laterality demo |
+| `res/open.gif` | Opening demo |
+| `res/mastication.gif` | Mastication demo |
+| `res/robot-front.JPG` | Robot side photo |
+| `res/back-motors.JPG` | Internal servo photo |
+| `res/interface.jpg` | Desktop interface screenshot |
+| `res/aruco.jpg` | ArUco marker reference |
 
 ## License
 
-This project is licensed under the MIT License. See `LICENSE` for details.
+MIT. See [LICENSE](LICENSE).

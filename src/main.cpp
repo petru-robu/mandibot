@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Servo.h>
+#include <SoftwareSerial.h>
 
 // --- User Constants ---
 const int TEMP_STG = 11;
@@ -32,6 +33,16 @@ const int open_MEDPTER_DRP = 0;
 
 const int NUM_MOTORS = 8;
 
+// --- Audio (DY-SV8F / DY-SV5W MP3 module reading the SD card) ---
+// The hardware UART is taken by the PC link, so the module is driven over SoftwareSerial at 9600 baud.
+const int AUDIO_TX = 4;  // Arduino TX -> module RX
+const int AUDIO_RX = 7;  // not used by the module commands, but SoftwareSerial needs a pin
+SoftwareSerial audio(AUDIO_RX, AUDIO_TX);
+
+// Frame: header, command, length, checksum
+const byte AUDIO_PLAY[] = {0xAA, 0x02, 0x00, 0xAC};  // play the current/first track
+const byte AUDIO_STOP[] = {0xAA, 0x04, 0x00, 0xAE};  // stop playback
+
 struct Motor {
     int pin;
     Servo servo;
@@ -56,11 +67,14 @@ void setup() {
     Serial.begin(115200); // Using faster baud rate for real-time sliders
     Serial.setTimeout(10); // Fast timeout for responsive reading
 
-    // Attach servos and set to 100% (Closed) by default
+    audio.begin(9600);
+
+    // Attach servos and set to 50% (halfway between open and closed) by default
     for (int i = 0; i < NUM_MOTORS; i++) {
+        int startAngle = motors[i].openLim + (motors[i].closedLim - motors[i].openLim) / 2;
         motors[i].servo.attach(motors[i].pin);
-        motors[i].servo.write(motors[i].closedLim);
-        motors[i].currentAngle = motors[i].closedLim;
+        motors[i].servo.write(startAngle);
+        motors[i].currentAngle = startAngle;
     }
     Serial.println("Arduino ready. Listening for slider data...");
 }
@@ -69,6 +83,18 @@ void loop() {
     // Check if computer sent any data
     if (Serial.available() > 0) {
         String data = Serial.readStringUntil('\n');
+        data.trim();
+
+        // Audio commands from the PC: "PLAY" / "STOP"
+        if (data == "PLAY") {
+            audio.write(AUDIO_PLAY, sizeof(AUDIO_PLAY));
+            return;
+        }
+        if (data == "STOP") {
+            audio.write(AUDIO_STOP, sizeof(AUDIO_STOP));
+            return;
+        }
+
         int separatorIndex = data.indexOf(':');
 
         // Validate format "Index:Percentage"
