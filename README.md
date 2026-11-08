@@ -21,29 +21,29 @@ directly from `res/`.
 
 ### Robot movement
 
-<img src="res/general-gif.gif" alt="General robot movement" width="30%">
+<img src="res/general-gif.gif" alt="General robot movement" width="50%">
 
 ### Laterality
 
-![Left laterality movement](res/left-laterality.gif)
+<img src="res/left-laterality.gif" alt="Left laterality movement" width="50%">
 
 ### Opening
 
-![Jaw opening movement](res/open.gif)
+<img src="res/open.gif" alt="Jaw opening movement" width="50%">
 
 ### Mastication
 
-![Mastication cycle](res/mastication.gif)
+<img src="res/mastication.gif" alt="Mastication cycle" width="50%">
 
 ### Hardware
 
-<img src="res/robot-front.JPG" alt="Mandibot robot, side view" width="30%">
+<img src="res/robot-front.JPG" alt="Mandibot robot, side view" width="50%">
 
-<img src="res/back-motors.JPG" alt="Servo motors mounted inside the robot" width="30%">
+<img src="res/back-motors.JPG" alt="Servo motors mounted inside the robot" width="50%">
 
 ### Desktop interface
 
-![Mandibot desktop interface](res/interface.jpg)
+<img src="res/interface.jpg" alt="Mandibot desktop interface" width="50%">
 
 ## How it works
 
@@ -59,7 +59,7 @@ The tracker looks for two markers from the **`DICT_4X4_50` ArUco dictionary**:
 - **ID 15** is the fixed upper reference.
 - **ID 13** is attached to the mandible.
 
-<img src="res/aruco.jpg" alt="ArUco markers used for jaw tracking" width="30%">
+<img src="res/aruco.jpg" alt="ArUco markers used for jaw tracking" width="50%">
 
 The app measures the lower marker's position relative to the upper marker.
 **Set Center** resets the reference position; smoothing reduces detection
